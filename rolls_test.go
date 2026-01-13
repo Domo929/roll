@@ -1,4 +1,4 @@
-package rolls
+package main
 
 import (
 	"math/rand"

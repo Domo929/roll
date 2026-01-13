@@ -1,4 +1,4 @@
-package rolls
+package main
 
 import (
 	"fmt"
