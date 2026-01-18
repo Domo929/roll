@@ -1,2 +1,0 @@
-# Roll
-Simple Dice Roller 
