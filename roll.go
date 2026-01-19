@@ -3,14 +3,19 @@
 package roll
 
 import (
-	"crypto/rand"
+	"errors"
 	"fmt"
-	"math/big"
+	"math/rand"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 // Modifier represents special roll modifiers
 type Modifier int
@@ -118,10 +123,10 @@ func Parse(expr string) (*Dice, error) {
 // Roll performs the dice roll and returns the result
 func (d *Dice) Roll() (*Result, error) {
 	if d.NumDice < 1 {
-		return nil, fmt.Errorf("must roll at least 1 die")
+		return nil, errors.New("must roll at least 1 die")
 	}
 	if d.Sides < 1 {
-		return nil, fmt.Errorf("dice must have at least 1 side")
+		return nil, errors.New("dice must have at least 1 side")
 	}
 
 	result := &Result{
@@ -142,13 +147,11 @@ func (d *Dice) Roll() (*Result, error) {
 	result.Rolls = rolls
 
 	// Apply modifiers
-	kept, dropped := applyRollModifier(rolls, d.RollMod, d.DropKeep)
-	result.Kept = kept
-	result.Dropped = dropped
+	result.Kept, result.Dropped = applyRollModifier(rolls, d.RollMod, d.DropKeep)
 
 	// Calculate total
 	total := 0
-	for _, v := range kept {
+	for _, v := range result.Kept {
 		total += v
 	}
 	total += d.Modifier
@@ -157,13 +160,9 @@ func (d *Dice) Roll() (*Result, error) {
 	return result, nil
 }
 
-// rollDie rolls a single die with the given number of sides using crypto/rand
+// rollDie rolls a single die with the given number of sides
 func rollDie(sides int) (int, error) {
-	n, err := rand.Int(rand.Reader, big.NewInt(int64(sides)))
-	if err != nil {
-		return 0, err
-	}
-	return int(n.Int64()) + 1, nil
+	return rand.Intn(sides) + 1, nil
 }
 
 // applyRollModifier applies drop/keep modifiers to the rolls
