@@ -13,10 +13,6 @@ import (
 	"time"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 // Modifier represents special roll modifiers
 type Modifier int
 
@@ -162,6 +158,7 @@ func (d *Dice) Roll() (*Result, error) {
 
 // rollDie rolls a single die with the given number of sides
 func rollDie(sides int) (int, error) {
+	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(sides) + 1, nil
 }
 
