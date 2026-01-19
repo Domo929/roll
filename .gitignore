@@ -21,3 +21,4 @@ roll
 *.swp
 *.swo
 *~
+!/cmd/roll/
