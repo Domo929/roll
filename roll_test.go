@@ -276,6 +276,19 @@ func TestRollAbilityScore(t *testing.T) {
 	assert.LessOrEqual(t, result.Total, 18)
 }
 
+func TestRollDieDistribution(t *testing.T) {
+	// Rolling 100 d6s should produce at least 2 distinct values.
+	// With the old per-call Seed bug, rapid rolls in the same nanosecond
+	// could all return the same value.
+	seen := make(map[int]bool)
+	for i := 0; i < 100; i++ {
+		result, err := RollString("1d6")
+		require.NoError(t, err)
+		seen[result.Total] = true
+	}
+	assert.Greater(t, len(seen), 1, "expected multiple distinct values from 100 rolls")
+}
+
 func TestResultString(t *testing.T) {
 	result := &Result{
 		Rolls:    []int{3, 5, 2, 6},

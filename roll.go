@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // Modifier represents special roll modifiers
@@ -134,11 +133,7 @@ func (d *Dice) Roll() (*Result, error) {
 	// Roll all dice
 	rolls := make([]int, d.NumDice)
 	for i := 0; i < d.NumDice; i++ {
-		roll, err := rollDie(d.Sides)
-		if err != nil {
-			return nil, err
-		}
-		rolls[i] = roll
+		rolls[i] = rollDie(d.Sides)
 	}
 	result.Rolls = rolls
 
@@ -156,10 +151,10 @@ func (d *Dice) Roll() (*Result, error) {
 	return result, nil
 }
 
-// rollDie rolls a single die with the given number of sides
-func rollDie(sides int) (int, error) {
-	rand.Seed(time.Now().UnixNano())
-	return rand.Intn(sides) + 1, nil
+// rollDie rolls a single die with the given number of sides.
+// Go 1.22+ auto-seeds math/rand, so no manual seeding is needed.
+func rollDie(sides int) int {
+	return rand.Intn(sides) + 1
 }
 
 // applyRollModifier applies drop/keep modifiers to the rolls
