@@ -46,6 +46,13 @@ type Dice struct {
 	DropKeep  int      // number to drop/keep
 }
 
+const (
+	// MaxDice is the maximum number of dice allowed in a single roll.
+	MaxDice = 10000
+	// MaxSides is the maximum number of sides allowed on a die.
+	MaxSides = 10000
+)
+
 // diceRegex matches expressions like "2d6", "4d6dl1", "1d20+5", "2d20kh1"
 var diceRegex = regexp.MustCompile(`(?i)^(\d+)?d(\d+)(dl|dh|kh|kl)?(\d+)?([+-]\d+)?$`)
 
@@ -70,6 +77,12 @@ func Parse(expr string) (*Dice, error) {
 			return nil, fmt.Errorf("invalid number of dice: %s", matches[1])
 		}
 		d.NumDice = n
+		if n < 1 {
+			return nil, fmt.Errorf("number of dice must be at least 1, got %d", n)
+		}
+		if n > MaxDice {
+			return nil, fmt.Errorf("number of dice cannot exceed %d, got %d", MaxDice, n)
+		}
 	}
 
 	// Number of sides
@@ -78,6 +91,12 @@ func Parse(expr string) (*Dice, error) {
 		return nil, fmt.Errorf("invalid number of sides: %s", matches[2])
 	}
 	d.Sides = sides
+	if sides < 1 {
+		return nil, fmt.Errorf("number of sides must be at least 1, got %d", sides)
+	}
+	if sides > MaxSides {
+		return nil, fmt.Errorf("number of sides cannot exceed %d, got %d", MaxSides, sides)
+	}
 
 	// Drop/keep modifier
 	if matches[3] != "" {
@@ -201,6 +220,14 @@ func RollString(expr string) (*Result, error) {
 	return result, nil
 }
 
+// formatModifier returns a modifier string like "+5" or "-2", or "" if modifier is 0.
+func formatModifier(mod int) string {
+	if mod == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%+d", mod)
+}
+
 // RollAdvantage rolls 2d20 and keeps the higher result
 func RollAdvantage(modifier int) (*Result, error) {
 	d := &Dice{
@@ -214,7 +241,7 @@ func RollAdvantage(modifier int) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	result.Expression = fmt.Sprintf("2d20kh1%+d (advantage)", modifier)
+	result.Expression = fmt.Sprintf("2d20kh1%s (advantage)", formatModifier(modifier))
 	return result, nil
 }
 
@@ -231,7 +258,7 @@ func RollDisadvantage(modifier int) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	result.Expression = fmt.Sprintf("2d20kl1%+d (disadvantage)", modifier)
+	result.Expression = fmt.Sprintf("2d20kl1%s (disadvantage)", formatModifier(modifier))
 	return result, nil
 }
 
