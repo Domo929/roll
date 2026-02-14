@@ -103,6 +103,21 @@ func TestParse(t *testing.T) {
 			expr:    "not a dice roll",
 			wantErr: true,
 		},
+		{
+			name:    "too many dice",
+			expr:    "10001d6",
+			wantErr: true,
+		},
+		{
+			name:    "too many sides",
+			expr:    "1d100001",
+			wantErr: true,
+		},
+		{
+			name:    "zero sides",
+			expr:    "1d0",
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -274,6 +289,47 @@ func TestRollAbilityScore(t *testing.T) {
 	// Result should be between 3 and 18
 	assert.GreaterOrEqual(t, result.Total, 3)
 	assert.LessOrEqual(t, result.Total, 18)
+}
+
+func TestRollDieDistribution(t *testing.T) {
+	// Rolling 100 d6s should produce at least 2 distinct values.
+	// With the old per-call Seed bug, rapid rolls in the same nanosecond
+	// could all return the same value.
+	seen := make(map[int]bool)
+	for i := 0; i < 100; i++ {
+		result, err := RollString("1d6")
+		require.NoError(t, err)
+		seen[result.Total] = true
+	}
+	assert.Greater(t, len(seen), 1, "expected multiple distinct values from 100 rolls")
+}
+
+func TestAdvantageExpressionString(t *testing.T) {
+	t.Run("with modifier", func(t *testing.T) {
+		result, err := RollAdvantage(5)
+		require.NoError(t, err)
+		assert.Equal(t, "2d20kh1+5 (advantage)", result.Expression)
+	})
+
+	t.Run("without modifier", func(t *testing.T) {
+		result, err := RollAdvantage(0)
+		require.NoError(t, err)
+		assert.Equal(t, "2d20kh1 (advantage)", result.Expression)
+	})
+
+	t.Run("negative modifier", func(t *testing.T) {
+		result, err := RollAdvantage(-2)
+		require.NoError(t, err)
+		assert.Equal(t, "2d20kh1-2 (advantage)", result.Expression)
+	})
+}
+
+func TestDisadvantageExpressionString(t *testing.T) {
+	t.Run("without modifier", func(t *testing.T) {
+		result, err := RollDisadvantage(0)
+		require.NoError(t, err)
+		assert.Equal(t, "2d20kl1 (disadvantage)", result.Expression)
+	})
 }
 
 func TestResultString(t *testing.T) {

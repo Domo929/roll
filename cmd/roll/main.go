@@ -19,6 +19,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -82,48 +83,64 @@ Examples:
 }
 
 func handleAdvantage(args []string) {
+	if err := handleAdvantageTo(os.Stdout, args); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
+}
+
+func handleAdvantageTo(w io.Writer, args []string) error {
 	mod := 0
 	if len(args) > 0 {
 		var err error
 		mod, err = strconv.Atoi(args[0])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Invalid modifier: %s\n", args[0])
-			os.Exit(1)
+			return fmt.Errorf("invalid modifier: %s", args[0])
 		}
 	}
 
 	result, err := roll.RollAdvantage(mod)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("error: %w", err)
 	}
 
-	fmt.Printf("🎲 Advantage: %s\n", result.String())
+	fmt.Fprintf(w, "🎲 Advantage: %s\n", result.String())
+	return nil
 }
 
 func handleDisadvantage(args []string) {
+	if err := handleDisadvantageTo(os.Stdout, args); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
+}
+
+func handleDisadvantageTo(w io.Writer, args []string) error {
 	mod := 0
 	if len(args) > 0 {
 		var err error
 		mod, err = strconv.Atoi(args[0])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Invalid modifier: %s\n", args[0])
-			os.Exit(1)
+			return fmt.Errorf("invalid modifier: %s", args[0])
 		}
 	}
 
 	result, err := roll.RollDisadvantage(mod)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("error: %w", err)
 	}
 
-	fmt.Printf("🎲 Disadvantage: %s\n", result.String())
+	fmt.Fprintf(w, "🎲 Disadvantage: %s\n", result.String())
+	return nil
 }
 
 func handleStats() {
-	fmt.Println("🎲 Rolling ability scores (4d6 drop lowest):")
-	fmt.Println()
+	handleStatsTo(os.Stdout)
+}
+
+func handleStatsTo(w io.Writer) {
+	fmt.Fprintln(w, "🎲 Rolling ability scores (4d6 drop lowest):")
+	fmt.Fprintln(w)
 
 	abilities := []string{"STR", "DEX", "CON", "INT", "WIS", "CHA"}
 	total := 0
@@ -131,24 +148,28 @@ func handleStats() {
 	for _, ability := range abilities {
 		result, err := roll.RollAbilityScore()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			fmt.Fprintf(w, "Error: %v\n", err)
+			return
 		}
 		total += result.Total
-		fmt.Printf("  %s: %2d  %s\n", ability, result.Total, result.String())
+		fmt.Fprintf(w, "  %s: %2d  %s\n", ability, result.Total, result.String())
 	}
 
-	fmt.Println()
-	fmt.Printf("  Total: %d (average: %.1f)\n", total, float64(total)/6.0)
+	fmt.Fprintln(w)
+	fmt.Fprintf(w, "  Total: %d (average: %.1f)\n", total, float64(total)/6.0)
 }
 
 func handleRolls(exprs []string) {
+	handleRollsTo(os.Stdout, exprs)
+}
+
+func handleRollsTo(w io.Writer, exprs []string) {
 	for _, expr := range exprs {
 		result, err := roll.RollString(expr)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error rolling '%s': %v\n", expr, err)
+			fmt.Fprintf(w, "Error rolling '%s': %v\n", expr, err)
 			continue
 		}
-		fmt.Printf("🎲 %s: %s\n", expr, result.String())
+		fmt.Fprintf(w, "🎲 %s: %s\n", expr, result.String())
 	}
 }
